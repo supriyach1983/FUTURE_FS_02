@@ -399,7 +399,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const API = 'https://future-fs-02-dz09.onrender.com'
+  const API = 'https://future-fs-02-dz09.onrender.com';
   let currentPage = 'dashboard';
   let editingId = null;
   let allContacts = [];
@@ -417,7 +417,7 @@
 
     if (!email || !password) { errEl.textContent = 'Please enter email and password'; errEl.classList.add('show'); return; }
 
-    const res = await api('POST', '/auth/login', { email, password });
+    const res = await api('POST', '/api/auth/login', { email, password });
     if (res.success) {
       currentUser = res.user;
       showApp();
@@ -437,7 +437,7 @@
 
     if (!name || !email || !password) { errEl.textContent = 'All fields are required'; errEl.classList.add('show'); return; }
 
-    const res = await api('POST', '/auth/signup', { name, email, password });
+    const res = await api('POST', '/api/auth/signup', { name, email, password });
     if (res.success) {
       toast('Account created! Please login 🎉');
       showLogin();
@@ -451,7 +451,6 @@
     document.getElementById('loginPage').style.display  = 'none';
     document.getElementById('signupPage').style.display = 'none';
     document.getElementById('appPage').style.display    = 'flex';
-    // show user info in sidebar
     document.getElementById('userName').textContent  = currentUser.name;
     document.getElementById('userEmail').textContent = currentUser.email;
     document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
@@ -506,7 +505,7 @@
 
   // ── DASHBOARD ─────────────────────────────────────────
   async function loadDashboard() {
-    const s = await api('GET', '/stats');
+    const s = await api('GET', '/api/stats');
     if (s.success) {
       document.getElementById('s-contacts').textContent = s.data.totalContacts;
       document.getElementById('s-leads').textContent    = s.data.totalLeads;
@@ -516,7 +515,7 @@
       document.getElementById('s-inactive').textContent = s.data.inactiveContacts;
       document.getElementById('s-lead').textContent     = s.data.leadContacts;
     }
-    const c = await api('GET', '/contacts');
+    const c = await api('GET', '/api/contacts');
     if (c.success) {
       document.getElementById('dash-contacts-body').innerHTML = c.data.slice(0,5).map(contact => `
         <tr>
@@ -530,7 +529,7 @@
 
   // ── CONTACTS ──────────────────────────────────────────
   async function loadContacts() {
-    const res = await api('GET', '/contacts');
+    const res = await api('GET', '/api/contacts');
     if (res.success) { allContacts = res.data; renderContacts(allContacts); }
   }
 
@@ -559,14 +558,12 @@
       : `<tr><td colspan="6"><div class="empty-state">No contacts found</div></td></tr>`;
   }
 
-  // ── UPDATE STATUS (new feature!) ──────────────────────
+  // ── UPDATE STATUS ──────────────────────────────────────
   async function updateStatus(id, newStatus, selectEl) {
-    // Update CSS class for color
     selectEl.className = 'status-select ' + newStatus.toLowerCase();
-    const res = await api('PATCH', '/contacts/' + id + '/status', { status: newStatus });
+    const res = await api('PATCH', '/api/contacts/' + id + '/status', { status: newStatus });
     if (res.success) {
       toast('Status updated to ' + newStatus + '!');
-      // also refresh dashboard stats if needed
     } else {
       toast('Failed to update status', 'error');
     }
@@ -582,7 +579,7 @@
 
   async function deleteContact(id) {
     if (!confirm('Delete this contact?')) return;
-    const res = await api('DELETE', '/contacts/' + id);
+    const res = await api('DELETE', '/api/contacts/' + id);
     if (res.success) { toast('Contact deleted'); loadContacts(); }
   }
 
@@ -597,7 +594,7 @@
   const STAGE_COLORS = { New:'var(--accent)', Proposal:'var(--accent4)', Negotiation:'var(--accent2)', Closed:'var(--muted)' };
 
   async function loadLeads() {
-    const res = await api('GET', '/leads');
+    const res = await api('GET', '/api/leads');
     if (!res.success) return;
     document.getElementById('pipeline').innerHTML = STAGES.map(stage => {
       const leads = res.data.filter(l => l.stage === stage);
@@ -620,14 +617,14 @@
 
   async function deleteLead(id) {
     if (!confirm('Delete this lead?')) return;
-    const res = await api('DELETE', '/leads/' + id);
+    const res = await api('DELETE', '/api/leads/' + id);
     if (res.success) { toast('Lead deleted'); loadLeads(); }
   }
 
   // ── TASKS ─────────────────────────────────────────────
   let allTasks = [];
   async function loadTasks() {
-    const res = await api('GET', '/tasks');
+    const res = await api('GET', '/api/tasks');
     if (res.success) { allTasks = res.data; renderTasks(); }
   }
   function renderTasks() {
@@ -645,12 +642,12 @@
       : `<div class="empty-state">No tasks yet</div>`;
   }
   async function toggleTask(id, done) {
-    const res = await api('PUT', '/tasks/' + id, { done });
+    const res = await api('PUT', '/api/tasks/' + id, { done });
     if (res.success) loadTasks();
   }
   async function deleteTask(id) {
     if (!confirm('Delete this task?')) return;
-    const res = await api('DELETE', '/tasks/' + id);
+    const res = await api('DELETE', '/api/tasks/' + id);
     if (res.success) { toast('Task deleted'); loadTasks(); }
   }
 
@@ -696,17 +693,17 @@
     if (modalMode==='contact') {
       const body = { name:document.getElementById('f-name').value, email:document.getElementById('f-email').value, phone:document.getElementById('f-phone').value, company:document.getElementById('f-company').value, status:document.getElementById('f-status').value };
       if (!body.name||!body.email) return toast('Name & Email required','error');
-      res = editingId ? await api('PUT','/contacts/'+editingId,body) : await api('POST','/contacts',body);
+      res = editingId ? await api('PUT','/api/contacts/'+editingId,body) : await api('POST','/api/contacts',body);
       if (res.success) { closeModal(); toast(editingId?'Contact updated!':'Contact added!'); loadContacts(); if(currentPage==='dashboard') loadDashboard(); }
     } else if (modalMode==='lead') {
       const body = { title:document.getElementById('f-title').value, contactName:document.getElementById('f-contactName').value, value:document.getElementById('f-value').value, stage:document.getElementById('f-stage').value };
       if (!body.title) return toast('Title required','error');
-      res = await api('POST','/leads',body);
+      res = await api('POST','/api/leads',body);
       if (res.success) { closeModal(); toast('Lead added!'); loadLeads(); }
     } else if (modalMode==='task') {
       const body = { title:document.getElementById('f-taskTitle').value, dueDate:document.getElementById('f-dueDate').value, priority:document.getElementById('f-priority').value };
       if (!body.title) return toast('Title required','error');
-      res = await api('POST','/tasks',body);
+      res = await api('POST','/api/tasks',body);
       if (res.success) { closeModal(); toast('Task added!'); loadTasks(); }
     }
     if (res && !res.success) toast(res.message||'Something went wrong','error');
